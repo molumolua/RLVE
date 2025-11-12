@@ -74,6 +74,7 @@ controller_class = identifier2controller[identifier]
 
 Note that when creating the environment, you can specify the argument `answer_markers` to control how the answer is extracted from a model’s output during verification.
 By default, it extracts the answer enclosed between `<answer>` and `</answer>`.
+You can check [this example usage](slime/rollout/rm_hub/rlve_rm.py) for reference.
 
 When generating a problem, we specify a random seed `seed` and a problem difficulty level `d` ($d \geq 0$):
 
