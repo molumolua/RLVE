@@ -116,7 +116,7 @@ Example: `10` (do **NOT** include the backticks or quotes)."""
                     return self.rewards["rewarding_weight"] * (self.parameter["reference_answer"] / processed_result)
                 else :
                     return self.rewards["invalid_answer"]
-            elif self.rewarding_strategy == "gold=answer" :
+            elif self.rewards["rewarding_strategy"] == "gold=answer" :
                 return self.rewards["rewarding_weight"] * (processed_result == self.parameter["reference_answer"])
             else :
                 raise NotImplementedError("Unknown rewarding strategy: {}".format(self.rewards["rewarding_strategy"]))
