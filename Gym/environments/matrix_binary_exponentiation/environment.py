@@ -121,13 +121,10 @@ Example (do **NOT** include the backticks or quotes):
             if not all(len(row) == self.parameter["N"] for row in A_K) :
                 return self.rewards["wrong_format"]
 
-            # Normalize gold_answer to list of lists for consistent comparison after JSON deserialization
-            gold_answer = [list(row) for row in self.parameter["gold_answer"]]
-            
             if self.rewards["rewarding_strategy"] == "mean([gold=answer])^beta" :
-                return self.rewards["rewarding_weight"] * ((sum(sum(answer == gold for answer, gold in zip(answer_row, gold_row)) for answer_row, gold_row in zip(A_K, gold_answer)) / (self.parameter["N"] * self.parameter["N"])) ** self.rewards["rewarding_beta"])
+                return self.rewards["rewarding_weight"] * ((sum(sum(answer == gold for answer, gold in zip(answer_row, gold_row)) for answer_row, gold_row in zip(A_K, self.parameter["gold_answer"])) / (self.parameter["N"] * self.parameter["N"])) ** self.rewards["rewarding_beta"])
             elif self.rewards["rewarding_strategy"] == "gold=answer" :
-                return A_K == gold_answer
+                return A_K == self.parameter["gold_answer"]
             else :
                 raise NotImplementedError("Unknown rewarding strategy: {}".format(self.rewards["rewarding_strategy"]))
         else :
