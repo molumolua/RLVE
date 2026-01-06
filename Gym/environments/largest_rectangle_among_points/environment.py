@@ -145,7 +145,8 @@ Your task is to find four **distinct** points such that they form a rectangle (N
                     return None
 
                 expected_C = (B[0] + D[0] - A[0], B[1] + D[1] - A[1])
-                if expected_C != C:  # Parallelogram property
+                # Compare as tuples to handle JSON deserialization (lists vs tuples)
+                if expected_C != tuple(C):  # Parallelogram property
                     return None
 
                 area = abs(dx1*dy2 - dy1*dx2)

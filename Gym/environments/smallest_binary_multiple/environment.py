@@ -95,7 +95,6 @@ class SmallestBinaryMultiple_Environment(VerifiableEnvironment) : # https://www.
             if self.rewards["rewarding_strategy"] == "(gold/answer)^beta" :
                 return self.rewards["rewarding_weight"] * ((self.parameter["reference_answer"] / processed_result) ** self.rewards["rewarding_beta"])
             elif self.rewards["rewarding_strategy"] == "gold=answer" :
-                assert self.parameter["reference_answer"] != processed_result
                 return self.rewards["rewarding_weight"] * (self.parameter["reference_answer"] == processed_result)
             else :
                 raise NotImplementedError("Unknown rewarding strategy: {}".format(self.rewards["rewarding_strategy"]))
