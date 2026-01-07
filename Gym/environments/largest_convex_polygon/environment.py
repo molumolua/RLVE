@@ -178,6 +178,10 @@ Find a subset of distinct points that forms the vertices of a **convex polygon**
                 return (a[0]-o[0])*(b[1]-o[1]) - (a[1]-o[1])*(b[0]-o[0])
 
             def can_form_convex_polygon(points: List[Tuple[int, int]]) -> bool:
+                # check if all points are list, if so convert to tuple, else do nothing (will raise later)
+                if all(isinstance(p, list) for p in points):
+                    points = [tuple(p) for p in points]
+                
                 pts = sorted(set(points))
                 n = len(pts)
                 if n < 3:

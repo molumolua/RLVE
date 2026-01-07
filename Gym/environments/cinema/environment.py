@@ -1,6 +1,6 @@
 import math
 import random
-from typing import Optional
+from typing import Optional, Tuple
 from Gym.environment import VerifiableEnvironment
 
 
@@ -55,7 +55,7 @@ Please compute the **probability that all {N} people get a seat** (i.e., no one 
         return self.prompt_template.format(N = self.parameter["N"], K = self.parameter["K"])
 
 
-    def _process(self, answer : Optional[str]) -> Optional[int] :
+    def _process(self, answer : Optional[str]) -> Optional[Tuple[int, int]] :
         if answer is not None :
             answer = answer.strip()
             try :
@@ -71,7 +71,7 @@ Please compute the **probability that all {N} people get a seat** (i.e., no one 
         processed_result = self.processor(output)
         if processed_result is not None :
             assert isinstance(processed_result, tuple) and len(processed_result) == 2, "Processed result should be a tuple of two integers"
-            if processed_result == self.parameter["gold_answer"] :
+            if processed_result == tuple(self.parameter["gold_answer"]) :
                 return self.rewards["correct_answer"]
             else :
                 return self.rewards["wrong_answer"]

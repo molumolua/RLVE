@@ -104,7 +104,7 @@ Example: `{all_B_answer}` (do **NOT** include the backticks or quotes).
             if self.rewards["rewarding_strategy"] == "mean([gold=answer])^beta" :
                 return self.rewards["rewarding_weight"] * ((sum(float(a == b) for a, b in zip(self.parameter["reference_answer"], processed_result)) / len(self.parameter["reference_answer"])) ** self.rewards["rewarding_beta"])
             elif self.rewards["rewarding_strategy"] == "gold=answer" :
-                return self.rewards["rewarding_weight"] * all(a == b for a, b in zip(self.parameter["reference"], processed_result))
+                return self.rewards["rewarding_weight"] * all(a == b for a, b in zip(self.parameter["reference_answer"], processed_result))
             else :
                 raise NotImplementedError("Unknown rewarding strategy: {}".format(self.rewards["rewarding_strategy"]))
         else :

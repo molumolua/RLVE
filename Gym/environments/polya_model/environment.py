@@ -77,7 +77,7 @@ What's the probability that **all** specified events occur? Output a single frac
     
 
     def scorer(self, output : str) -> float :
-        processed_result = self._process(output)
+        processed_result = self.processor(output)
         if processed_result is not None :
             if processed_result == self.parameter["gold_answer"] :
                 return self.rewards["correct_answer"]

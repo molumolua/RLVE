@@ -153,8 +153,8 @@ X, Y, and M are given as follows:
                     reward += self.rewards["rewarding_weight_perimeter"] * 1.0
                 else :
                     reward += self.rewards["rewarding_weight_perimeter"] * ((gold_perimeter / answer_perimeter) ** self.rewards["rewarding_beta_perimeter"])
-            elif self.rewards["rewarding_weight_perimeter"] == "gold=answer" :
-                reward += self.rewards["rewarding_beta_weight"] * (gold_perimeter == answer_perimeter)
+            elif self.rewards["rewarding_strategy_perimeter"] == "gold=answer" :
+                reward += self.rewards["rewarding_weight_perimeter"] * (gold_perimeter == answer_perimeter)
             else :
                 raise NotImplementedError(f"Unknown rewarding strategy: {self.rewards['rewarding_strategy_perimeter']}")
 
