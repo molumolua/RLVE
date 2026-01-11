@@ -84,7 +84,7 @@ In such a formation, items `a`, `b`, `c`, and `d` are called type `A`, `B`, `C`,
         self.parameter["reference_answer"] = ""
         for xi in X:
             A_cnt, B_cnt, C_cnt, D_cnt = ans_val[xi]
-            self.parameter["gold_answer"].append((A_cnt, B_cnt, C_cnt, D_cnt))
+            self.parameter["gold_answer"].append([A_cnt, B_cnt, C_cnt, D_cnt])
             self.parameter["reference_answer"] += "{} {} {} {}\n".format(A_cnt, B_cnt, C_cnt, D_cnt)
     
 
@@ -100,7 +100,7 @@ In such a formation, items `a`, `b`, `c`, and `d` are called type `A`, `B`, `C`,
                 for line in answer.splitlines() :
                     line = line.strip()
                     if line :
-                        matrix.append(tuple(map(int, line.split())))
+                        matrix.append(list(map(int, line.split())))
                         if len(matrix[-1]) != 4 :
                             return None
                 return matrix
