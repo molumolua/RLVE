@@ -131,9 +131,9 @@ def compute_score(predict_str: str, ground_truth: str) -> Dict[str, Union[int, f
         acc, format_score, reward = 1, 1, 1.0
     else:
         if not format_correct:
-            acc, format_score, reward = 0, 0, 0.0
+            acc, format_score, reward = 0, 1, -1
         else:
-            acc, format_score, reward = 0, 1, 0.1
+            acc, format_score, reward = 0, 1, -1
     
     return dict(
         reward = reward,

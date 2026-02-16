@@ -17,6 +17,7 @@ from .livecodebench import evaluate_single_example as livecodebench_compute_scor
 from .rlve_rm import rlve_rm
 
 from .math_verify import compute_score as math_verify_compute_score
+from .choice import compute_score as choice_compute_score
 import json
 
 
@@ -33,12 +34,12 @@ async def remote_rm(args, sample: Sample):
             return await resp.json()
 
 
-async def async_rm(args, sample: Sample, **kwargs):
+async def async_rm(args, sample: Sample, rm_type_override=None, **kwargs):
     if args.custom_rm_path is not None:
         rm_function = load_function(args.custom_rm_path)
         return await rm_function(args, sample, **kwargs)
 
-    rm_type = args.rm_type
+    rm_type = rm_type_override if rm_type_override is not None else args.rm_type
     response = sample.response
     label = sample.label
     if rm_type.startswith("boxed_"):
@@ -66,7 +67,7 @@ async def async_rm(args, sample: Sample, **kwargs):
             return rlve_rm(args=args, environment=metadata["environment"], config=metadata["config"], response=response)
         else:
             raise NotImplementedError(f"Custom RM for {rm_type} is not implemented.")
-    if rm_type=="math_verify":
+    if rm_type=="math-verify":
         return math_verify_compute_score(response, label)
     
     if rm_type=="choice":
@@ -82,12 +83,13 @@ async def async_rm(args, sample: Sample, **kwargs):
 async def batched_async_rm(
     args,
     samples: list[Sample],
+    rm_type_override=None,
     **kwargs,
 ) -> list[Union[int, float]]:
     if args.custom_rm_path is not None:
         # Ensure the custom reward function is implemented in batch mode
         rm_function = load_function(args.custom_rm_path)
         return await rm_function(args, samples, **kwargs)
-    tasks = [async_rm(args, sample, **kwargs) for sample in samples]
+    tasks = [async_rm(args, sample, rm_type_override=rm_type_override, **kwargs) for sample in samples]
     rewards = await asyncio.gather(*tasks)
     return rewards

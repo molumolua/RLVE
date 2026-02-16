@@ -8,7 +8,7 @@ import torch
 import torch.distributed as dist
 from megatron.core import mpu
 from megatron.core.transformer.transformer_layer import get_transformer_layer_offset
-from sglang.srt.utils.patch_torch import monkey_patch_torch_reductions
+from sglang.srt.patch_torch import monkey_patch_torch_reductions
 from sglang.srt.utils import MultiprocessingSerializer
 from tqdm import tqdm
 

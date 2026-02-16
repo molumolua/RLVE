@@ -92,9 +92,11 @@ TinyZero_TEMPLATE = """A conversation between User and Assistant. The user asks 
 User: {prompt}
 Assistant: Let me solve this step by step.
 <think>"""
-DirectPrompt_TEMPLATE = """Please reason step by step and put your final answer within \\boxed{{}}.
-User: {prompt}
-Assistant:"""
+DirectPrompt_TEMPLATE = """<|im_start|>system
+Please reason step by step and put your final answer within \\boxed{{}}.<|im_end|>
+<|im_start|>user
+{prompt}<|im_end|>
+<|im_start|>assistant"""
 def custom_prompt_preprocessor(args, user_prompt : str, apply_chat_template : bool) -> Union[str, List[Dict[str, str]]] :
     if args.custom_prompt_preprocessor == "TinyZero" :
         assert not apply_chat_template
@@ -157,10 +159,11 @@ class Dataset:
             self.origin_samples.append(
                 Sample(
                     prompt=prompt,
-                    label=data[label_key] if label_key is not None else None,
+                    label=data.get("ground_truth",None),
                     metadata=metadata,
                 )
             )
+            
 
         self.epoch_id = -1
         self.seed = seed

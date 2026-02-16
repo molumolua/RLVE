@@ -43,7 +43,7 @@ CKPT_ARGS=(
    --ref-load ../Qwen3-4B_torch_dist
    --load ../${RUN_NAME}/
    --save ../${RUN_NAME}/
-   --save-interval 1
+   --save-interval 500
 )
 
 ROLLOUT_ARGS=(
@@ -52,14 +52,14 @@ ROLLOUT_ARGS=(
    --environment-list "${ENVIRONMENT_LIST}"
 
    --custom-prompt-preprocessor DirectPrompt
-   --answer-marker-type "\\boxed{}"
+   --answer-marker-type "boxed"
 
    --rm-type rlve
    --reward-key reward
 
    --num-rollout 1000000
-   --rollout-batch-size 8
-   --n-samples-per-prompt 2
+   --rollout-batch-size 64
+   --n-samples-per-prompt 8
    --rollout-max-response-len 8192
    --rollout-temperature 1.0
 
@@ -87,8 +87,8 @@ EVAL_ARGS=(
 PERF_ARGS=(
    --tensor-model-parallel-size 2
    --sequence-parallel
-   --pipeline-model-parallel-size 4
-   --context-parallel-size 1
+   --pipeline-model-parallel-size 1
+   --context-parallel-size 4
    --expert-model-parallel-size 1
    --expert-tensor-parallel-size 1
 
@@ -97,7 +97,7 @@ PERF_ARGS=(
    --recompute-num-layers 1
 
    --use-dynamic-batch-size
-   --max-tokens-per-gpu 8192 # If you are concerned about OOM, you can initially set this value to rollout_max_response_len / cp_size and then increase it later to improve training efficiency.
+   --max-tokens-per-gpu 4096 # If you are concerned about OOM, you can initially set this value to rollout_max_response_len / cp_size and then increase it later to improve training efficiency.
 
    # --optimizer-cpu-offload
    # --overlap-cpu-optimizer-d2h-h2d

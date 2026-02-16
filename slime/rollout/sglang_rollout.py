@@ -134,7 +134,9 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     return sample
 
 
-async def generate_and_rm(args, sample: Sample, sampling_params: dict, evaluation=False) -> Sample:
+async def generate_and_rm(
+    args, sample: Sample, sampling_params: dict, evaluation=False, eval_rm_type=None
+) -> Sample:
     # For samples with existing response, check if they're complete
     if sample.status == Sample.Status.COMPLETED or sample.status == Sample.Status.TRUNCATED:
         assert sample.response is not None
@@ -168,7 +170,7 @@ async def generate_and_rm(args, sample: Sample, sampling_params: dict, evaluatio
 
         # for multi agent system, the reward of some sample is calculated during generation.
         samples_need_reward = [sample for sample in samples if sample.reward is None]
-        rewards = await batched_async_rm(args, samples_need_reward)
+        rewards = await batched_async_rm(args, samples_need_reward, rm_type_override=eval_rm_type)
         for sample, reward in zip(samples_need_reward, rewards):
             sample.reward = reward
         return samples
@@ -176,24 +178,29 @@ async def generate_and_rm(args, sample: Sample, sampling_params: dict, evaluatio
         if sample.status == Sample.Status.ABORTED:
             return sample
 
-        sample.reward = await async_rm(args, sample)
+        sample.reward = await async_rm(args, sample, rm_type_override=eval_rm_type)
 
     return sample
 
 
-async def generate_and_rm_group(args, group: list[Sample], sampling_params: dict, evaluation=False) -> list[Sample]:
+async def generate_and_rm_group(
+    args, group: list[Sample], sampling_params: dict, evaluation=False, eval_rm_type=None
+) -> list[Sample]:
     state = GenerateState(args)
 
     if state.aborted:
         return group
 
     group = await asyncio.gather(
-        *[generate_and_rm(args, sample, sampling_params.copy(), evaluation=evaluation) for sample in group]
+        *[
+            generate_and_rm(args, sample, sampling_params.copy(), evaluation=evaluation, eval_rm_type=eval_rm_type)
+            for sample in group
+        ]
     )
 
     # for the rm that need the whole group, we will not do the rm here
     if not state.aborted and args.group_rm:
-        rewards = await batched_async_rm(args, group)
+        rewards = await batched_async_rm(args, group, rm_type_override=eval_rm_type)
         for sample, reward in zip(group, rewards):
             sample.reward = reward
 
@@ -355,6 +362,15 @@ async def generate_rollout_async(args, rollout_id: int, data_source, data_buffer
 
 EVAL_PROMPT_DATASET = {}
 
+# Default rm_type per eval dataset when --eval-dataset-rm-type is not set (avoids using training rm_type e.g. rlve for eval)
+DEFAULT_EVAL_DATASET_RM_TYPE = {
+    "BBEH": "bbeh",
+    "MATH": "math-verify",
+    "AIME": "math-verify",
+    "AMC": "math-verify",
+    "MMLU-Pro": "choice",
+}
+
 
 async def eval_rollout(args, rollout_id):
     assert not args.group_rm, "Group RM is not supported for eval rollout"
@@ -393,6 +409,11 @@ async def eval_rollout_single_dataset(args, rollout_id, name, path):
         )
     dataset = EVAL_PROMPT_DATASET[name]
 
+    # Use per-dataset RM type for eval so we don't use training rm_type (e.g. rlve) for standard eval sets
+    eval_rm_type = (
+        getattr(args, "eval_dataset_rm_type", {}) or {}
+    ).get(name) or DEFAULT_EVAL_DATASET_RM_TYPE.get(name) or args.rm_type
+
     sampling_params = dict(
         temperature=args.rollout_temperature if args.eval_temperature is None else args.eval_temperature,
         top_p=args.rollout_top_p if args.eval_top_p is None else args.eval_top_p,
@@ -422,6 +443,7 @@ async def eval_rollout_single_dataset(args, rollout_id, name, path):
                     sample,
                     sampling_params=sampling_params,
                     evaluation=True,
+                    eval_rm_type=eval_rm_type,
                 )
             )
 
