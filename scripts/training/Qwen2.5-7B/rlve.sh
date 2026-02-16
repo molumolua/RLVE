@@ -1,5 +1,7 @@
 #!/bin/bash
+export WANDB_MODE=offline
 
+WANDB_API_KEY=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
 if [ $# -lt 3 ]; then
     echo "Usage: $0 WANDB_PROJECT RUN_NAME ENVIRONMENT_LIST"
     exit 1
@@ -33,11 +35,11 @@ else
 fi
 echo "HAS_NVLINK: $HAS_NVLINK (detected $NVLINK_COUNT NVLink references)"
 
-source scripts/models/qwen2.5-7B.sh
+source scripts/models/qwen3-4B.sh
 
 CKPT_ARGS=(
-   --hf-checkpoint ../Qwen2.5-7B
-   --ref-load ../Qwen2.5-7B_torch_dist
+   --hf-checkpoint /inspire/hdd/global_user/xucaijun-253108120121/Model/Qwen/Qwen3-4B-Base
+   --ref-load ../Qwen3-4B_torch_dist
    --load ../${RUN_NAME}/
    --save ../${RUN_NAME}/
    --save-interval 1

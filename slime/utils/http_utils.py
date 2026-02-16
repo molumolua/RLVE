@@ -78,11 +78,11 @@ def terminate_process(process: multiprocessing.Process, timeout: float = 1.0) ->
 async def post(url, payload, use_http2=False, max_retries=60):
     # never timeout
     timeout = httpx.Timeout(None)
-    max_retries = 60
+    max_retries = 5
     retry_count = 0
     while retry_count < max_retries:
         try:
-            async with httpx.AsyncClient(http1=not use_http2, http2=use_http2, timeout=timeout) as client:
+            async with httpx.AsyncClient(http1=not use_http2, http2=use_http2, timeout=timeout,trust_env=False) as client:
                 response = await client.post(url, json=payload or {})
                 response.raise_for_status()
                 try:
@@ -105,7 +105,7 @@ async def post(url, payload, use_http2=False, max_retries=60):
 async def get(url, use_http2=False):
     # never timeout
     timeout = httpx.Timeout(None)
-    async with httpx.AsyncClient(http1=not use_http2, http2=use_http2, timeout=timeout) as client:
+    async with httpx.AsyncClient(http1=not use_http2, http2=use_http2, timeout=timeout,trust_env=False) as client:
         response = await client.get(url)
         response.raise_for_status()
         output = response.json()

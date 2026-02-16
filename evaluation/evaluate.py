@@ -131,7 +131,7 @@ async def generate_and_rm(args, sample, sampling_params, sglang_port) :
         assert "input_length" in sample.metadata, "input_length must be in sample.metadata when eval_max_context_len is set"
         sampling_params["max_new_tokens"] = min(sampling_params["max_new_tokens"], args.eval_max_context_len - sample.metadata["input_length"] - 32)
     response = await post(
-        url = "http://localhost:{sglang_port}/generate".format(sglang_port = sglang_port),
+        url = "http://127.0.0.1:{sglang_port}/generate".format(sglang_port = sglang_port),
         payload = {
             "text": sample.prompt,
             "sampling_params": sampling_params,

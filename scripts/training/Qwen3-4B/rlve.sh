@@ -1,5 +1,7 @@
 #!/bin/bash
 
+
+
 if [ $# -lt 3 ]; then
     echo "Usage: $0 WANDB_PROJECT RUN_NAME ENVIRONMENT_LIST"
     exit 1
@@ -20,10 +22,11 @@ pkill -9 python
 
 set -ex
 
-# will prevent ray from buffering stdout/stderr
-export PYTHONBUFFERED=16
-# fix tokenizers parallelism warning when using multiprocessing
-export TOKENIZERS_PARALLELISM=false
+export WANDB_MODE=offline
+WANDB_API_KEY=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
+unset https_proxy
+unset http_proxy
+
 
 NVLINK_COUNT=$(nvidia-smi | grep -o "NVLink" | wc -l)
 if [ "$NVLINK_COUNT" -gt 0 ]; then
@@ -36,7 +39,7 @@ echo "HAS_NVLINK: $HAS_NVLINK (detected $NVLINK_COUNT NVLink references)"
 source scripts/models/qwen3-4B.sh
 
 CKPT_ARGS=(
-   --hf-checkpoint ../Qwen3-4B
+   --hf-checkpoint /inspire/hdd/global_user/xucaijun-253108120121/Model/Qwen/Qwen3-4B-Base
    --ref-load ../Qwen3-4B_torch_dist
    --load ../${RUN_NAME}/
    --save ../${RUN_NAME}/
@@ -55,8 +58,8 @@ ROLLOUT_ARGS=(
    --reward-key reward
 
    --num-rollout 1000000
-   --rollout-batch-size 64
-   --n-samples-per-prompt 8
+   --rollout-batch-size 8
+   --n-samples-per-prompt 2
    --rollout-max-response-len 8192
    --rollout-temperature 1.0
 
@@ -69,11 +72,11 @@ ROLLOUT_ARGS=(
 EVAL_ARGS=(
    --eval-interval 20
    --eval-prompt-data \
-   BBEH /data/EVAL/BBEH/bbeh_data.json \
-   MATH /data/EVAL/MATH/think_MATH-500_MATH-500-processed.json \
-   MMLU-Pro /data/EVAL/MMLU-Pro/MMLU-Pro-Valid.json \
-   AMC /data/EVAL/AMC/think_amc23_amc23_test.json \
-   AIME /data/EVAL/AIME/think_aime24_aime24_test.json \
+   BBEH data/EVAL/BBEH/bbeh_data.json \
+   MATH data/EVAL/MATH/think_MATH-500_MATH-500-processed.json \
+   MMLU-Pro data/EVAL/MMLU-Pro/MMLU-Pro-Valid.json \
+   AMC data/EVAL/AMC/think_amc23_amc23_test.json \
+   AIME data/EVAL/AIME/think_aime24_aime24_test.json \
    --n-samples-per-eval-prompt 1
    --eval-top-p 0.95
    --eval-temperature 0.6
@@ -84,8 +87,8 @@ EVAL_ARGS=(
 PERF_ARGS=(
    --tensor-model-parallel-size 2
    --sequence-parallel
-   --pipeline-model-parallel-size 1
-   --context-parallel-size 4
+   --pipeline-model-parallel-size 4
+   --context-parallel-size 1
    --expert-model-parallel-size 1
    --expert-tensor-parallel-size 1
 
@@ -94,7 +97,7 @@ PERF_ARGS=(
    --recompute-num-layers 1
 
    --use-dynamic-batch-size
-   --max-tokens-per-gpu 2048 # If you are concerned about OOM, you can initially set this value to rollout_max_response_len / cp_size and then increase it later to improve training efficiency.
+   --max-tokens-per-gpu 8192 # If you are concerned about OOM, you can initially set this value to rollout_max_response_len / cp_size and then increase it later to improve training efficiency.
 
    # --optimizer-cpu-offload
    # --overlap-cpu-optimizer-d2h-h2d
@@ -130,7 +133,7 @@ WANDB_ARGS=(
 SGLANG_ARGS=(
    --rollout-num-gpus-per-engine 1
    --sglang-mem-fraction-static 0.7
-   # --sglang-server-concurrency 256
+   # --sglang-server-concurrency 16
 )
 
 MISC_ARGS=(

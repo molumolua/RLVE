@@ -12,23 +12,9 @@ def extract_user_prompt(prompt_data):
     返回:
     str: 提取出的 user prompt 字符串
     """
-    if isinstance(prompt_data, list):
-        # 策略 1: 如果列表包含字典 (ChatML 格式)，提取最后一个 role='user' 的 content
-        # 假设评估时关注的是最后一个用户指令
-        for item in reversed(prompt_data):
-            if isinstance(item, dict) and item.get('role') == 'user':
-                return item.get('content')
-        
-        # 策略 2: 如果是字符串列表，假设最后一个是 user prompt (或者是第一个，视具体数据而定)
-        # 这里假设列表最后一个元素是最终的 prompt
-        if prompt_data and isinstance(prompt_data[-1], str):
-            return prompt_data[-1]
-            
-        # 策略 3: 如果无法识别结构，转换为字符串
-        return str(prompt_data)
-        
-    elif isinstance(prompt_data, str):
-        return prompt_data
+    for item in reversed(prompt_data):
+        if isinstance(item, dict) and item.get('role') == 'user':
+            return item.get('content')
     
     return str(prompt_data)
 
@@ -89,7 +75,7 @@ def convert_parquet_to_json(raw_data_dir, output_dir):
 
 if __name__ == "__main__":
     # 定义输入和输出目录
-    RAW_DATA_DIR = "/Users/molu/Downloads/RLVE/raw_data"
-    OUTPUT_DIR = "/Users/molu/Downloads/RLVE/data/EVAL"
+    RAW_DATA_DIR = "./raw_data"
+    OUTPUT_DIR = "./data/EVAL"
     
     convert_parquet_to_json(RAW_DATA_DIR, OUTPUT_DIR)

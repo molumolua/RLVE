@@ -65,7 +65,7 @@ class GenerateState(metaclass=SingletonMeta):
 
 async def generate(args, sample: Sample, sampling_params) -> Sample:
     state = GenerateState(args)
-
+    
     url = f"http://{args.sglang_router_ip}:{args.sglang_router_port}/generate"
 
     assert (
