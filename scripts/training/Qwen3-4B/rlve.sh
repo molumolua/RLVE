@@ -1,0 +1,177 @@
+#!/bin/bash
+
+if [ $# -lt 3 ]; then
+    echo "Usage: $0 WANDB_PROJECT RUN_NAME ENVIRONMENT_LIST"
+    exit 1
+fi
+
+WANDB_PROJECT=$1
+RUN_NAME=$2
+ENVIRONMENT_LIST=$3
+
+pkill -9 sglang
+sleep 3
+ray stop --force
+pkill -9 ray
+pkill -9 python
+sleep 3
+pkill -9 ray
+pkill -9 python
+
+set -ex
+
+# will prevent ray from buffering stdout/stderr
+export PYTHONBUFFERED=16
+# fix tokenizers parallelism warning when using multiprocessing
+export TOKENIZERS_PARALLELISM=false
+
+NVLINK_COUNT=$(nvidia-smi | grep -o "NVLink" | wc -l)
+if [ "$NVLINK_COUNT" -gt 0 ]; then
+    HAS_NVLINK=1
+else
+    HAS_NVLINK=0
+fi
+echo "HAS_NVLINK: $HAS_NVLINK (detected $NVLINK_COUNT NVLink references)"
+
+source scripts/models/qwen3-4B.sh
+
+CKPT_ARGS=(
+   --hf-checkpoint ../Qwen3-4B
+   --ref-load ../Qwen3-4B_torch_dist
+   --load ../${RUN_NAME}/
+   --save ../${RUN_NAME}/
+   --save-interval 1
+)
+
+ROLLOUT_ARGS=(
+   --disable-rollout-global-dataset
+   --rlve
+   --environment-list "${ENVIRONMENT_LIST}"
+
+   --custom-prompt-preprocessor DirectPrompt
+   --answer-marker-type "\\boxed{}"
+
+   --rm-type rlve
+   --reward-key reward
+
+   --num-rollout 1000000
+   --rollout-batch-size 64
+   --n-samples-per-prompt 8
+   --rollout-max-response-len 8192
+   --rollout-temperature 1.0
+
+
+   --num-steps-per-rollout 1
+   --wandb-always-use-train-step
+   --balance-data
+)
+
+EVAL_ARGS=(
+   --eval-interval 20
+   --eval-prompt-data \
+   BBEH /data/EVAL/BBEH/bbeh_data.json \
+   MATH /data/EVAL/MATH/think_MATH-500_MATH-500-processed.json \
+   MMLU-Pro /data/EVAL/MMLU-Pro/MMLU-Pro-Valid.json \
+   AMC /data/EVAL/AMC/think_amc23_amc23_test.json \
+   AIME /data/EVAL/AIME/think_aime24_aime24_test.json \
+   --n-samples-per-eval-prompt 1
+   --eval-top-p 0.95
+   --eval-temperature 0.6
+
+   --eval-input-key user_prompt
+)
+
+PERF_ARGS=(
+   --tensor-model-parallel-size 2
+   --sequence-parallel
+   --pipeline-model-parallel-size 1
+   --context-parallel-size 4
+   --expert-model-parallel-size 1
+   --expert-tensor-parallel-size 1
+
+   --recompute-granularity full
+   --recompute-method uniform
+   --recompute-num-layers 1
+
+   --use-dynamic-batch-size
+   --max-tokens-per-gpu 2048 # If you are concerned about OOM, you can initially set this value to rollout_max_response_len / cp_size and then increase it later to improve training efficiency.
+
+   # --optimizer-cpu-offload
+   # --overlap-cpu-optimizer-d2h-h2d
+   # --use-precision-aware-optimizer
+)
+
+GRPO_ARGS=(
+   --advantage-estimator grpo
+   # --use-kl-loss
+   # --kl-loss-coef 0.00
+   # --kl-loss-type low_var_kl
+   --entropy-coef 0.00
+   --eps-clip 0.2
+   --eps-clip-high 0.2
+)
+
+OPTIMIZER_ARGS=(
+   --optimizer adam
+   --lr 1e-6
+   --lr-decay-style constant
+   --weight-decay 0.01
+   --adam-beta1 0.9
+   --adam-beta2 0.98
+)
+
+WANDB_ARGS=(
+   --use-wandb
+   --wandb-project "${WANDB_PROJECT}"
+   --wandb-group "${RUN_NAME}"
+   --wandb-key "${WANDB_API_KEY}"
+)
+
+SGLANG_ARGS=(
+   --rollout-num-gpus-per-engine 1
+   --sglang-mem-fraction-static 0.7
+   # --sglang-server-concurrency 256
+)
+
+MISC_ARGS=(
+   # default dropout in megatron is 0.1
+   --attention-dropout 0.0
+   --hidden-dropout 0.0
+   # should be good for model performance
+   --accumulate-allreduce-grads-in-fp32
+   --attention-softmax-in-fp32
+   # need to comment this when using model with MLA
+   --attention-backend flash
+)
+
+# launch the master node of ray in container
+export MASTER_ADDR=${MASTER_ADDR:-"127.0.0.1"}
+ray start --head --node-ip-address ${MASTER_ADDR} --num-gpus 8 --disable-usage-stats --dashboard-host=0.0.0.0 --dashboard-port=8265
+
+# Build the runtime environment JSON with proper variable substitution
+RUNTIME_ENV_JSON="{
+  \"env_vars\": {
+    \"PYTHONPATH\": \"/root/Megatron-LM/\",
+    \"CUDA_DEVICE_MAX_CONNECTIONS\": \"1\",
+    \"NCCL_NVLS_ENABLE\": \"${HAS_NVLINK}\",
+    \"PYTORCH_CUDA_ALLOC_CONF\": \"max_split_size_mb:1024\"
+  }
+}"
+
+ray job submit --address="http://127.0.0.1:8265" \
+   --runtime-env-json="${RUNTIME_ENV_JSON}" \
+   -- python3 train.py \
+   --actor-num-nodes 1 \
+   --actor-num-gpus-per-node 8 \
+   --colocate \
+   ${MODEL_ARGS[@]} \
+   ${CKPT_ARGS[@]} \
+   ${ROLLOUT_ARGS[@]} \
+   ${OPTIMIZER_ARGS[@]} \
+   ${GRPO_ARGS[@]} \
+   ${DISTRIBUTED_ARGS[@]} \
+   ${WANDB_ARGS[@]} \
+   ${PERF_ARGS[@]} \
+   ${EVAL_ARGS[@]} \
+   ${SGLANG_ARGS[@]} \
+   ${MISC_ARGS[@]}

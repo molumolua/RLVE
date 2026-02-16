@@ -92,10 +92,16 @@ TinyZero_TEMPLATE = """A conversation between User and Assistant. The user asks 
 User: {prompt}
 Assistant: Let me solve this step by step.
 <think>"""
+DirectPrompt_TEMPLATE = """Please reason step by step and put your final answer within \\boxed{{}}.
+User: {prompt}
+Assistant:"""
 def custom_prompt_preprocessor(args, user_prompt : str, apply_chat_template : bool) -> Union[str, List[Dict[str, str]]] :
     if args.custom_prompt_preprocessor == "TinyZero" :
         assert not apply_chat_template
         return TinyZero_TEMPLATE.format(prompt = user_prompt)
+    elif args.custom_prompt_preprocessor == "DirectPrompt" :
+        assert not apply_chat_template
+        return DirectPrompt_TEMPLATE.format(prompt = user_prompt)
     elif args.custom_prompt_preprocessor == "ChatTemplate_NoSystemPrompt" :
         assert apply_chat_template
         # Check if user_prompt is already in chat format (list of dicts)

@@ -894,7 +894,7 @@ def get_slime_extra_args_provider(add_custom_arguments=None):
                 "--custom-prompt-preprocessor",
                 type = str,
                 required = True,
-                choices = ("TinyZero", "ChatTemplate_NoSystemPrompt", ),
+                choices = ("TinyZero", "ChatTemplate_NoSystemPrompt", "DirectPrompt", ),
                 help = "Choose a custom prompt preprocessor.",
             )
             return parser

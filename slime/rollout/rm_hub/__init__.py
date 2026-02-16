@@ -16,6 +16,7 @@ from .livecodebench import evaluate_single_example as livecodebench_compute_scor
 
 from .rlve_rm import rlve_rm
 
+from .math_verify import compute_score as math_verify_compute_score
 import json
 
 
@@ -65,7 +66,11 @@ async def async_rm(args, sample: Sample, **kwargs):
             return rlve_rm(args=args, environment=metadata["environment"], config=metadata["config"], response=response)
         else:
             raise NotImplementedError(f"Custom RM for {rm_type} is not implemented.")
+    if rm_type=="math_verify":
+        return math_verify_compute_score(response, label)
     
+    if rm_type=="choice":
+        return choice_compute_score(response, label)
     # Simple reward functions without timeout issues
     if rm_type == "remote_rm":
         raise NotImplementedError("Remote RM is not implemented.")
