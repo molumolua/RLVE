@@ -81,10 +81,10 @@ class RolloutController:
     def eval(self, rollout_id):
         if self.args.debug_train_only:
             # if debug train only, we don't generate evaluation data
-            return
+            return None
 
         data = self.eval_generate_rollout(self.args, rollout_id, self.data_source, evaluation=True)
-        log_eval_data(rollout_id, self.args, data)
+        return log_eval_data(rollout_id, self.args, data)
 
     def post_process_rewards(self, samples: Union[list[Sample], list[list[Sample]]]):
         if self.custom_reward_post_process_func is not None:
@@ -171,6 +171,7 @@ class RolloutController:
 
 
 def log_eval_data(rollout_id, args, data):
+    """Build eval metrics dict. Caller should log to wandb in main process for proper sync."""
     log_dict = {}
     for key in data.keys():
         rewards = data[key]["rewards"]
@@ -186,7 +187,7 @@ def log_eval_data(rollout_id, args, data):
             if not args.wandb_always_use_train_step
             else rollout_id * args.rollout_batch_size * args.n_samples_per_prompt // args.global_batch_size
         )
-        wandb.log(log_dict)
+    return log_dict
 
 
 def log_rollout_data(rollout_id, args, samples, rollout_time):

@@ -19,7 +19,7 @@ def compute_score(solution_str, ground_truth):
     except TimeoutException:
         print("TimeoutException in math-verify.")
 
-    reward = 1.0 if acc else -1.0
+    reward = 1.0 if acc else 0.0
 
     return dict(
         reward = reward,

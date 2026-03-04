@@ -1,4 +1,5 @@
 import ray
+import wandb
 from sglang.srt.constants import GPU_MEMORY_TYPE_KV_CACHE, GPU_MEMORY_TYPE_WEIGHTS
 
 from slime.ray.placement_group import create_actor_group, create_placement_groups, create_rollout_manager
@@ -55,7 +56,15 @@ def train(args):
     for rollout_id in range(args.start_rollout_id, args.num_rollout):
         # TODO extract the duplicated eval logic
         if args.eval_interval is not None and rollout_id == 0:
-            ray.get(rollout_manager.async_eval(rollout_id))
+            eval_log_dict = ray.get(rollout_manager.async_eval(rollout_id))
+            print("eval!!!")
+            print("eval!!!")
+            print("eval!!!")
+            print(eval_log_dict)
+            
+            if eval_log_dict is not None and args.use_wandb:
+                print("upload to wandb!")
+                wandb.log(eval_log_dict)
 
         rollout_data_ref = ray.get(rollout_manager.async_generate(rollout_id))
 
@@ -89,7 +98,9 @@ def train(args):
             (rollout_id + 1) % args.eval_interval == 0
             or (num_rollout_per_epoch is not None and (rollout_id + 1) % num_rollout_per_epoch == 0)
         ):
-            ray.get(rollout_manager.async_eval(rollout_id))
+            eval_log_dict = ray.get(rollout_manager.async_eval(rollout_id))
+            if eval_log_dict is not None and args.use_wandb:
+                wandb.log(eval_log_dict)
 
 
 if __name__ == "__main__":

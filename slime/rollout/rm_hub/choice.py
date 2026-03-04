@@ -127,7 +127,7 @@ def compute_score(solution_str: str, ground_truth: str) -> float:
 
         
 
-    reward = 1.0 if acc else -1.0
+    reward = 1.0 if acc else 0.0
     
     return {
         "reward": reward,
